@@ -32,10 +32,11 @@ jobs:
         uses: lukka/run-vcpkg@v10
         id: runvcpkg
         with:
+          vcpkgDirectory: ${{ github.workspace }}/external/vcpkg
           vcpkgJsonGlob: 'vcpkg.json'
 
       - name: Run CMake+vcpkg+Ninja+CTest to generate/build/test.
-        uses: lukka/run-cmake@v10
+        uses: lukka/run-cmake@v10.1
         id: runcmake
         with:
           configurePreset: 'ninja-multi-vcpkg'
