@@ -1,0 +1,19 @@
+UseTab: Never
+AccessModifierOffset: -4
+NamespaceIndentation: None
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterNamespace: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+CompactNamespaces: true
+Cpp11BracedListStyle: true
+IndentWidth: 4
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: false
+Standard: Cpp11
+ColumnLimit: 80
+SortIncludes: false
+AlignConsecutiveAssignments : Consecutive
