@@ -29,14 +29,14 @@ jobs:
       - uses: lukka/get-cmake@latest
 
       - name: Restore artifacts, or setup vcpkg for building artifacts
-        uses: lukka/run-vcpkg@v10
+        uses: lukka/run-vcpkg@v10.1
         id: runvcpkg
         with:
           vcpkgDirectory: ${{ github.workspace }}/external/vcpkg
           vcpkgJsonGlob: 'vcpkg.json'
 
       - name: Run CMake+vcpkg+Ninja+CTest to generate/build/test.
-        uses: lukka/run-cmake@v10.1
+        uses: lukka/run-cmake@v10
         id: runcmake
         with:
           configurePreset: 'ninja-multi-vcpkg'
