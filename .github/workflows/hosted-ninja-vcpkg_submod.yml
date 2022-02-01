@@ -39,6 +39,6 @@ jobs:
         uses: lukka/run-cmake@v10
         id: runcmake
         with:
-          configurePreset: 'ninja-multi-vcpkg'
-          buildPreset: 'ninja-multi-vcpkg-debug'
-          testPreset: 'ninja-multi-vcpkg-debug'
+          configurePreset: 'ninja-multi'
+          buildPreset: 'ninja-multi-debug'
+          testPreset: 'ninja-multi-debug'
