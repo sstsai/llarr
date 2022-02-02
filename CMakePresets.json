@@ -19,14 +19,16 @@
       "configurePreset": "ninja-multi",
       "displayName": "Build ninja-multi-debug",
       "description": "Build ninja-multi Debug configuration",
-      "configuration": "Debug"
+      "configuration": "Debug",
+      "verbose": true
     },
     {
       "name": "ninja-multi-release",
       "configurePreset": "ninja-multi",
       "displayName": "Build ninja-multi-release",
       "description": "Build ninja-multi Release configuration",
-      "configuration": "Release"
+      "configuration": "Release",
+      "verbose": true
     }
   ],
   "testPresets": [

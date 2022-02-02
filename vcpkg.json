@@ -2,7 +2,5 @@
   "name": "main",
   "version-string": "latest",
   "dependencies": [
-    "fmt",
-    "gtest"
   ]
 }

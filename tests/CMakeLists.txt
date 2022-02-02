@@ -4,7 +4,7 @@ target_sources(tests
     main.cpp
 )
 target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(tests PRIVATE fmt::fmt GTest::gtest_main)
+target_link_libraries(tests PRIVATE fmt gtest_main)
 if (WIN32)
 set_property(TARGET tests PROPERTY CXX_STANDARD 23)
 else()
