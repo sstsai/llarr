@@ -2,4 +2,5 @@
 .vs/
 # generated build dir
 builds/
+out/
 external/

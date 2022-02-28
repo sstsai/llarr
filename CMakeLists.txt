@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.19)
 project(llarr)
 
 # bootstrap the package manager
@@ -54,7 +54,7 @@ endif()
 CPMAddPackage(
   NAME gtest
   GITHUB_REPOSITORY google/googletest
-  GIT_TAG release-1.10.0
+  GIT_TAG release-1.11.0
   OPTIONS "gtest_force_shared_crt ON" "BUILD_GMOCK OFF" "INSTALL_GTEST OFF"
 )
 CPMAddPackage("gh:fmtlib/fmt#8.1.1")

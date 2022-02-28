@@ -294,7 +294,7 @@ public:
         .imageFormat      = vk::Format::eB8G8R8A8Unorm,
         .imageColorSpace  = vk::ColorSpaceKHR::eSrgbNonlinear,
         .imageArrayLayers = 1,
-        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
         .presentMode      = vk::PresentModeKHR::eFifo,
         .clipped          = VK_TRUE};
     window win;
