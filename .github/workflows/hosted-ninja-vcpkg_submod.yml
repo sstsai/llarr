@@ -45,13 +45,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cpm-
 
-      - name: Restore artifacts, or setup vcpkg for building artifacts
-        uses: lukka/run-vcpkg@v10.1
-        id: runvcpkg
-        with:
-          vcpkgDirectory: ${{ github.workspace }}/external/vcpkg/cf470873f183180306fe6b8a8a4572c49ed5f94d
-          vcpkgJsonGlob: 'vcpkg.json'
-
       - name: Run CMake+vcpkg+Ninja+CTest to generate/build/test.
         uses: lukka/run-cmake@v10
         id: runcmake
