@@ -92,6 +92,11 @@ target_sources(imgui
 target_include_directories(imgui PUBLIC
   $<BUILD_INTERFACE:${CPM_PACKAGE_imgui_SOURCE_DIR}>
 )
+if (WIN32)
+set_property(TARGET imgui PROPERTY CXX_STANDARD 23)
+else()
+set_property(TARGET imgui PROPERTY CXX_STANDARD 20)
+endif()
 add_library(imgui_glfw)
 target_sources(imgui_glfw
   PUBLIC
@@ -103,6 +108,11 @@ target_include_directories(imgui_glfw PUBLIC
   $<BUILD_INTERFACE:${CPM_PACKAGE_imgui_SOURCE_DIR}/backends>
 )
 target_link_libraries(imgui_glfw PUBLIC imgui glfw)
+if (WIN32)
+set_property(TARGET imgui_glfw PROPERTY CXX_STANDARD 23)
+else()
+set_property(TARGET imgui_glfw PROPERTY CXX_STANDARD 20)
+endif()
 add_library(imgui_vulkan)
 target_sources(imgui_vulkan
   PUBLIC
@@ -120,6 +130,11 @@ target_compile_definitions(imgui_vulkan
     GLFW_INCLUDE_NONE
 )
 target_link_libraries(imgui_vulkan PUBLIC imgui Vulkan::Headers)
+if (WIN32)
+set_property(TARGET imgui_vulkan PROPERTY CXX_STANDARD 23)
+else()
+set_property(TARGET imgui_vulkan PROPERTY CXX_STANDARD 20)
+endif()
 # imgui end
 
 add_subdirectory(src)
