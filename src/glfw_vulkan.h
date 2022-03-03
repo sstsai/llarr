@@ -7,7 +7,6 @@
 #include <optional>
 #include <vector>
 #include <limits>
-#include <source_location>
 #include <string_view>
 #include <exception>
 namespace glfw {
@@ -41,21 +40,15 @@ auto make_window(int width, int height, char const *title = "",
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     return window(glfwCreateWindow(width, height, title, monitor, share));
 }
-inline void terminate_on_error(
-    vk::Result result,
-    std::source_location location = std::source_location::current())
+inline void terminate_on_error(vk::Result result)
 {
     if (result != vk::Result::eSuccess) {
-        fmt::print("file: {}({}:{}) `{}`: {}\n", location.file_name(),
-                   location.line(), location.column(), location.function_name(),
-                   to_string(result));
+        fmt::print("vulkan: {}\n", to_string(result));
         std::terminate();
     }
 }
 template <typename T>
-inline auto value_or_terminate(
-    vk::ResultValue<T> result_value,
-    std::source_location location = std::source_location::current()) -> T
+inline auto value_or_terminate(vk::ResultValue<T> result_value) -> T
 {
     terminate_on_error(result_value.result);
     return std::move(result_value.value);

@@ -24,11 +24,10 @@ jobs:
     steps:
       - name: Install glfw dependencies
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            sudo apt-get update
-            sudo apt install xorg-dev
-          fi
+          sudo apt-get update
+          sudo apt install xorg-dev
         shell: bash
+        if: ${{ matrix.os == 'ubuntu-latest' }}
 
       - uses: actions/checkout@v2
         with:
@@ -45,10 +44,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cpm-
 
-      - name: Run CMake+vcpkg+Ninja+CTest to generate/build/test.
-        uses: lukka/run-cmake@v10
-        id: runcmake
+      - uses: ilammy/msvc-dev-cmd@v1  
         with:
-          configurePreset: 'ninja-multi'
-          buildPreset: 'ninja-multi-debug'
-          testPreset: 'ninja-multi-debug'
+          arch: 'x64'
+      - name: 'Configure and build on Windows'
+        uses: lukka/run-cmake@v10
+        id: runcmake-windows
+        with:
+          configurePreset: 'vc++'
+          buildPreset: 'x64-release'
+          testPreset: 'x64-release'
+        if: ${{ matrix.os == 'windows-latest' }}
+
+      - name: 'Configure and build on Linux'
+        uses: lukka/run-cmake@v10
+        id: runcmake-windows
+        with:
+          configurePreset: 'gcc10'
+          buildPreset: 'gcc10-release'
+          testPreset: 'gcc10-release'
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+
+      - name: 'Configure and build on Mac'
+        uses: lukka/run-cmake@v10
+        id: runcmake-windows
+        with:
+          configurePreset: 'clang'
+          buildPreset: 'clang-release'
+          testPreset: 'clang-release'
+        if: ${{ matrix.os == 'macos-latest' }}
