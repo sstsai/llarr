@@ -58,7 +58,7 @@ jobs:
 
       - name: 'Configure and build on Linux'
         uses: lukka/run-cmake@v10
-        id: runcmake-windows
+        id: runcmake-linux
         with:
           configurePreset: 'gcc10'
           buildPreset: 'gcc10-release'
@@ -67,7 +67,7 @@ jobs:
 
       - name: 'Configure and build on Mac'
         uses: lukka/run-cmake@v10
-        id: runcmake-windows
+        id: runcmake-mac
         with:
           configurePreset: 'clang'
           buildPreset: 'clang-release'
