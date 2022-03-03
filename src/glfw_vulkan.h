@@ -3,9 +3,13 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
+#include <fmt/core.h>
 #include <optional>
 #include <vector>
 #include <limits>
+#include <source_location>
+#include <string_view>
+#include <exception>
 namespace glfw {
 struct release_instance {
     struct pointer {
@@ -37,7 +41,25 @@ auto make_window(int width, int height, char const *title = "",
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     return window(glfwCreateWindow(width, height, title, monitor, share));
 }
-struct vulkan_config {};
+inline void terminate_on_error(
+    vk::Result result,
+    std::source_location location = std::source_location::current())
+{
+    if (result != vk::Result::eSuccess) {
+        fmt::print("file: {}({}:{}) `{}`: {}\n", location.file_name(),
+                   location.line(), location.column(), location.function_name(),
+                   to_string(result));
+        std::terminate();
+    }
+}
+template <typename T>
+inline auto value_or_terminate(
+    vk::ResultValue<T> result_value,
+    std::source_location location = std::source_location::current()) -> T
+{
+    terminate_on_error(result_value.result);
+    return std::move(result_value.value);
+}
 inline auto vulkan_instance() -> vk::UniqueInstance
 {
     VULKAN_HPP_DEFAULT_DISPATCHER.init(
@@ -45,15 +67,17 @@ inline auto vulkan_instance() -> vk::UniqueInstance
             {}, "vkGetInstanceProcAddr"));
     uint32_t count;
     auto extensions = glfwGetRequiredInstanceExtensions(&count);
-    auto instance   = vk::createInstanceUnique(vk::InstanceCreateInfo{
-          .enabledExtensionCount = count, .ppEnabledExtensionNames = extensions});
+    auto instance   = value_or_terminate(vk::createInstanceUnique(
+          vk::InstanceCreateInfo{.enabledExtensionCount   = count,
+                                 .ppEnabledExtensionNames = extensions}));
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
     return instance;
 }
 inline auto vulkan_queue_selection(vk::Instance instance)
     -> std::optional<ImGui_ImplVulkan_InitInfo>
 {
-    for (auto physical_device : instance.enumeratePhysicalDevices()) {
+    for (auto physical_device :
+         value_or_terminate(instance.enumeratePhysicalDevices())) {
         auto queues = physical_device.getQueueFamilyProperties();
         for (uint32_t i = 0; i < queues.size(); i++) {
             if (queues[i].queueFlags & vk::QueueFlagBits::eGraphics) {
@@ -72,7 +96,8 @@ inline auto vulkan_queue_selection(vk::Instance instance)
 inline auto vulkan_surface(vk::Instance instance, GLFWwindow *window)
     -> vk::UniqueSurfaceKHR
 {
-    for (auto physical_device : instance.enumeratePhysicalDevices()) {
+    for (auto physical_device :
+         value_or_terminate(instance.enumeratePhysicalDevices())) {
         auto queues = physical_device.getQueueFamilyProperties();
         for (auto i = 0; i < queues.size(); i++) {
             if (glfwGetPhysicalDevicePresentationSupport(instance,
@@ -95,11 +120,11 @@ inline auto vulkan_queue(vk::PhysicalDevice physical_device,
         vk::DeviceQueueCreateInfo{.queueFamilyIndex = queue_family_index,
                                   .queueCount       = 1,
                                   .pQueuePriorities = &queue_priority};
-    auto device = physical_device.createDeviceUnique(
+    auto device = value_or_terminate(physical_device.createDeviceUnique(
         vk::DeviceCreateInfo{.queueCreateInfoCount    = 1,
                              .pQueueCreateInfos       = &queue_create_info,
                              .enabledExtensionCount   = 1,
-                             .ppEnabledExtensionNames = &device_extensions});
+                             .ppEnabledExtensionNames = &device_extensions}));
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
     return device;
 }
@@ -189,9 +214,9 @@ inline auto vulkan_command_buffer(vk::Device device,
                                   vk::CommandPool command_pool)
     -> vk::UniqueCommandBuffer
 {
-    return std::move(
+    return std::move(value_or_terminate(
         device.allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{
-            .commandPool = command_pool, .commandBufferCount = 1})[0]);
+            .commandPool = command_pool, .commandBufferCount = 1}))[0]);
 }
 struct vulkan_sync {
 public:
@@ -211,9 +236,9 @@ public:
           render_complete_semaphore(device.createSemaphoreUnique({})),
           fence(device.createFenceUnique(vk::FenceCreateInfo{
               .flags = vk::FenceCreateFlagBits::eSignaled})),
-          command_buffer(std::move(
+          command_buffer(std::move(value_or_terminate(
               device.allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{
-                  .commandPool = command_pool, .commandBufferCount = 1})[0]))
+                  .commandPool = command_pool, .commandBufferCount = 1}))[0]))
     {}
     operator vk::CommandBuffer() const { return *command_buffer; }
     auto acquire(vk::SwapchainKHR swapchain)
@@ -225,32 +250,32 @@ public:
     template <typename Fn> void command(vk::Fence fence, Fn &&fn)
     {
         device.resetCommandPool(command_pool);
-        command_buffer->begin(vk::CommandBufferBeginInfo{
-            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        terminate_on_error(command_buffer->begin(vk::CommandBufferBeginInfo{
+            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit}));
         std::forward<Fn>(fn)(*command_buffer);
-        command_buffer->end();
-        queue.submit(vk::SubmitInfo{.commandBufferCount = 1,
-                                    .pCommandBuffers    = &*command_buffer},
-                     fence);
+        terminate_on_error(command_buffer->end());
+        terminate_on_error(
+            queue.submit(vk::SubmitInfo{.commandBufferCount = 1,
+                                        .pCommandBuffers    = &*command_buffer},
+                         fence));
     }
     template <typename Fn>
     void render(vk::RenderPassBeginInfo const &begin_info, Fn &&fn)
     {
-        auto result = device.waitForFences(
-            *fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-        device.resetFences(*fence);
-        assert(result == vk::Result::eSuccess);
+        terminate_on_error(device.waitForFences(
+            *fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
+        terminate_on_error(device.resetFences(*fence));
         device.resetCommandPool(command_pool);
-        command_buffer->begin(vk::CommandBufferBeginInfo{
-            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        terminate_on_error(command_buffer->begin(vk::CommandBufferBeginInfo{
+            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit}));
         command_buffer->beginRenderPass(begin_info,
                                         vk::SubpassContents::eInline);
         std::forward<Fn>(fn)(*command_buffer);
         command_buffer->endRenderPass();
-        command_buffer->end();
+        terminate_on_error(command_buffer->end());
         vk::PipelineStageFlags pipeline_stage_flag =
             vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        queue.submit(
+        terminate_on_error(queue.submit(
             vk::SubmitInfo{.waitSemaphoreCount   = 1,
                            .pWaitSemaphores      = &*image_acquired_semaphore,
                            .pWaitDstStageMask    = &pipeline_stage_flag,
@@ -258,7 +283,7 @@ public:
                            .pCommandBuffers      = &*command_buffer,
                            .signalSemaphoreCount = 1,
                            .pSignalSemaphores    = &*render_complete_semaphore},
-            *fence);
+            *fence));
     }
     auto present(vk::SwapchainKHR swapchain, uint32_t image_index)
     {
@@ -334,7 +359,7 @@ public:
     }
     ~vulkan_window()
     {
-        device->waitIdle();
+        terminate_on_error(device->waitIdle());
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -377,12 +402,17 @@ public:
                         ImGui_ImplVulkan_RenderDrawData(main_draw_data,
                                                         command_buffer);
                     });
-                frame.sync.present(*swapchain, expected.value);
+                if (auto result =
+                        frame.sync.present(*swapchain, expected.value);
+                    result == vk::Result::eErrorOutOfDateKHR ||
+                    result == vk::Result::eSuboptimalKHR) {
+                    rebuild_swapchain = true;
+                }
             }
-        }
-        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
+            if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+                ImGui::UpdatePlatformWindows();
+                ImGui::RenderPlatformWindowsDefault();
+            }
         }
     }
     operator GLFWwindow *() const { return win.get(); }
@@ -448,14 +478,15 @@ private:
         int height;
         glfwGetFramebufferSize(win.get(), &width, &height);
         if (width > 0 && height > 0) {
-            device->waitIdle();
+            terminate_on_error(device->waitIdle());
             auto extent = vk::Extent2D{.width  = static_cast<uint32_t>(width),
                                        .height = static_cast<uint32_t>(height)};
             swapchain   = device->createSwapchainKHRUnique(
                   swapchain_info.setSurface(*surface)
                       .setImageExtent(extent)
                       .setOldSwapchain(*swapchain));
-            auto images = device->getSwapchainImagesKHR(*swapchain);
+            auto images =
+                value_or_terminate(device->getSwapchainImagesKHR(*swapchain));
             for (auto i = 0; i < images.size(); ++i) {
                 frames[i].image_view = vulkan_image_view(
                     *device, images[i], swapchain_info.imageFormat);
@@ -468,7 +499,7 @@ private:
     {
         frames[0].sync.command(vk::Fence(),
                                ImGui_ImplVulkan_CreateFontsTexture);
-        device->waitIdle();
+        terminate_on_error(device->waitIdle());
         ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 };
