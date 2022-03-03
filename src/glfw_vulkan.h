@@ -136,11 +136,12 @@ inline auto vulkan_pool(vk::Device device) -> vk::UniqueDescriptorPool
         {vk::DescriptorType::eStorageBufferDynamic, 1000},
         {vk::DescriptorType::eInputAttachment, 1000},
     }};
-    return device.createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
-        .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-        .maxSets       = 1000 * pool_sizes.size(),
-        .poolSizeCount = pool_sizes.size(),
-        .pPoolSizes    = pool_sizes.data()});
+    return value_or_terminate(
+        device.createDescriptorPoolUnique(vk::DescriptorPoolCreateInfo{
+            .flags   = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+            .maxSets = 1000 * pool_sizes.size(),
+            .poolSizeCount = pool_sizes.size(),
+            .pPoolSizes    = pool_sizes.data()}));
 }
 inline auto vulkan_render_pass(vk::Device device, vk::Format format)
     -> vk::UniqueRenderPass
@@ -163,45 +164,47 @@ inline auto vulkan_render_pass(vk::Device device, vk::Format format)
         .srcStageMask  = vk::PipelineStageFlagBits::eColorAttachmentOutput,
         .dstStageMask  = vk::PipelineStageFlagBits::eColorAttachmentOutput,
         .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite};
-    return device.createRenderPassUnique(
+    return value_or_terminate(device.createRenderPassUnique(
         vk::RenderPassCreateInfo{.attachmentCount = 1,
                                  .pAttachments    = &attachment_description,
                                  .subpassCount    = 1,
                                  .pSubpasses      = &subpass_description,
                                  .dependencyCount = 1,
-                                 .pDependencies   = &subpass_dependency});
+                                 .pDependencies   = &subpass_dependency}));
 }
 inline auto vulkan_image_view(vk::Device device, vk::Image image,
                               vk::Format format) -> vk::UniqueImageView
 {
-    return device.createImageViewUnique(vk::ImageViewCreateInfo{
-        .image            = image,
-        .viewType         = vk::ImageViewType::e2D,
-        .format           = format,
-        .subresourceRange = vk::ImageSubresourceRange{
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
-            .levelCount = 1,
-            .layerCount = 1}});
+    return value_or_terminate(
+        device.createImageViewUnique(vk::ImageViewCreateInfo{
+            .image            = image,
+            .viewType         = vk::ImageViewType::e2D,
+            .format           = format,
+            .subresourceRange = vk::ImageSubresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .levelCount = 1,
+                .layerCount = 1}}));
 }
 inline auto vulkan_frame_buffer(vk::Device device, vk::RenderPass render_pass,
                                 vk::ImageView image_view,
                                 vk::Extent2D image_extent)
     -> vk::UniqueFramebuffer
 {
-    return device.createFramebufferUnique(
+    return value_or_terminate(device.createFramebufferUnique(
         vk::FramebufferCreateInfo{.renderPass      = render_pass,
                                   .attachmentCount = 1,
                                   .pAttachments    = &image_view,
                                   .width           = image_extent.width,
                                   .height          = image_extent.height,
-                                  .layers          = 1});
+                                  .layers          = 1}));
 }
 inline auto vulkan_command_pool(vk::Device device, uint32_t queue_family_index)
     -> vk::UniqueCommandPool
 {
-    return device.createCommandPoolUnique(vk::CommandPoolCreateInfo{
-        .flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-        .queueFamilyIndex = queue_family_index});
+    return value_or_terminate(
+        device.createCommandPoolUnique(vk::CommandPoolCreateInfo{
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            .queueFamilyIndex = queue_family_index}));
 }
 inline auto vulkan_command_buffer(vk::Device device,
                                   vk::CommandPool command_pool)
@@ -225,10 +228,12 @@ public:
     vulkan_sync(vk::Device device, vk::CommandPool command_pool,
                 vk::Queue queue)
         : device(device), command_pool(command_pool), queue(queue),
-          image_acquired_semaphore(device.createSemaphoreUnique({})),
-          render_complete_semaphore(device.createSemaphoreUnique({})),
-          fence(device.createFenceUnique(vk::FenceCreateInfo{
-              .flags = vk::FenceCreateFlagBits::eSignaled})),
+          image_acquired_semaphore(
+              value_or_terminate(device.createSemaphoreUnique({}))),
+          render_complete_semaphore(
+              value_or_terminate(device.createSemaphoreUnique({}))),
+          fence(value_or_terminate(device.createFenceUnique(vk::FenceCreateInfo{
+              .flags = vk::FenceCreateFlagBits::eSignaled}))),
           command_buffer(std::move(value_or_terminate(
               device.allocateCommandBuffersUnique(vk::CommandBufferAllocateInfo{
                   .commandPool = command_pool, .commandBufferCount = 1}))[0]))
@@ -474,10 +479,10 @@ private:
             terminate_on_error(device->waitIdle());
             auto extent = vk::Extent2D{.width  = static_cast<uint32_t>(width),
                                        .height = static_cast<uint32_t>(height)};
-            swapchain   = device->createSwapchainKHRUnique(
+            swapchain   = value_or_terminate(device->createSwapchainKHRUnique(
                   swapchain_info.setSurface(*surface)
                       .setImageExtent(extent)
-                      .setOldSwapchain(*swapchain));
+                      .setOldSwapchain(*swapchain)));
             auto images =
                 value_or_terminate(device->getSwapchainImagesKHR(*swapchain));
             for (auto i = 0; i < images.size(); ++i) {
