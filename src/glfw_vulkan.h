@@ -283,14 +283,18 @@ public:
                            .pSignalSemaphores    = &*render_complete_semaphore},
             *fence));
     }
-    auto present(vk::SwapchainKHR swapchain, uint32_t image_index)
+    auto present(vk::SwapchainKHR swapchain, uint32_t image_index) noexcept
     {
-        return queue.presentKHR(
+        auto presentInfo =
             vk::PresentInfoKHR{.waitSemaphoreCount = 1,
                                .pWaitSemaphores = &*render_complete_semaphore,
                                .swapchainCount  = 1,
                                .pSwapchains     = &swapchain,
-                               .pImageIndices   = &image_index});
+                               .pImageIndices   = &image_index};
+        return static_cast<vk::Result>(
+            VULKAN_HPP_DEFAULT_DISPATCHER.vkQueuePresentKHR(
+                queue,
+                reinterpret_cast<const VkPresentInfoKHR *>(&presentInfo)));
     }
 };
 struct vulkan_app {
