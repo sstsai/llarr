@@ -24,7 +24,7 @@ endif()
 CPMAddPackage(
   NAME vcpkg
   GITHUB_REPOSITORY microsoft/vcpkg
-  GIT_TAG 2022.02.23
+  GIT_TAG 2022.06.16.1
   DOWNLOAD_ONLY TRUE
 )
 if (EXISTS ${CPM_PACKAGE_vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake)
@@ -54,17 +54,17 @@ endif()
 CPMAddPackage(
   NAME gtest
   GITHUB_REPOSITORY google/googletest
-  GIT_TAG release-1.11.0
+  GIT_TAG 15460959cbbfa20e66ef0b5ab497367e47fc0a04
   OPTIONS "gtest_force_shared_crt ON" "BUILD_GMOCK OFF" "INSTALL_GTEST OFF" "BUILD_SHARED_LIBS OFF"
 )
 CPMAddPackage("gh:fmtlib/fmt#8.1.1")
 CPMAddPackage(
   NAME glfw
   GITHUB_REPOSITORY glfw/glfw
-  GIT_TAG 3.3.6
+  GIT_TAG 3.3.7
   OPTIONS "GLFW_BUILD_DOCS OFF" "GLFW_INSTALL OFF"
 )
-CPMAddPackage("gh:KhronosGroup/Vulkan-Headers@1.3.206")
+CPMAddPackage("gh:KhronosGroup/Vulkan-Headers@1.3.218")
 
 # imgui start
 CPMAddPackage(
